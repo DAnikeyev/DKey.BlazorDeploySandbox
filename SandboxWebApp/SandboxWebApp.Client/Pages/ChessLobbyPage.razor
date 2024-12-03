@@ -1,0 +1,91 @@
+@page "/ChessLobby"
+@rendermode InteractiveWebAssembly
+
+<div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; background-color: @GetBackgroundColor(); width: 100%; min-height: 100vh;;">
+
+    <hr class="fancy-gap" />
+
+    <h1 style="text-align: center;">@ChessClockLobby?.LobbyId</h1>
+
+    <hr class="fancy-gap" />
+
+    <div style="display: flex; flex-direction: column; align-items: start; gap: 1rem;">
+        <div style="display: flex; flex-direction: column; gap: 2rem;">
+            <!-- Player 1 Timer -->
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span>Player 1: @Player1DisplayName</span>
+                <button @onclick="HandlePlayer1Click"
+                        style="
+                font-size: 2rem;
+                border: 2px solid black;
+                width: 15rem;
+                height: 5rem;
+                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0.5rem;
+                background: linear-gradient(135deg, #00aaff, #0077cc);
+                cursor: pointer;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                transition: transform 0.2s, box-shadow 0.2s;"
+                        onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 10px rgba(0,0,0,0.2)';"
+                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)';">
+                    @displayedTime1
+                </button>
+            </div>
+
+            <!-- Player 2 Timer -->
+            <div style="display: flex; align-items: start; gap: 1rem;">
+                <span>Player 2: @Player2DisplayName</span>
+                <button @onclick="HandlePlayer2Click"
+                        style="
+                font-size: 2rem;
+                border: 2px solid black;
+                width: 15rem;
+                height: 5rem;
+                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0.5rem;
+                background: linear-gradient(135deg, #ffaa00, #cc7700);
+                cursor: pointer;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                transition: transform 0.2s, box-shadow 0.2s;"
+                        onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 10px rgba(0,0,0,0.2)';"
+                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)';">
+                    @displayedTime2
+                </button>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button class="btn btn-warning" @onclick="PauseClock">Pause</button>
+            <button class="btn btn-danger" @onclick="ResetClock">Reset</button>
+            <span>@WinnerDisplay</span>
+            <span>@(ChessClockLobby?.Clock.IsRunning == true ? "Running" : "Paused")</span>
+            <span>@(ChessClockLobby?.Clock.IsPlayer1Turn == true ? " Player1 turn" : " Player2 turn")</span>
+        </div>
+    </div>
+
+    <hr class="fancy-gap" />
+</div>
+
+@code {
+
+    private string GetBackgroundColor()
+    {
+        if (ChessClockLobby?.Clock.IsRunning == true)
+        {
+            return "#ccffcc"; // light green
+        }
+        return ChessClockLobby?.Clock.IsPlayer1Winner switch
+        {
+            true => "#99ccff", // light blue
+            false => "#ffcc99", // light orange
+            _ => "#d3d3d3" // light grey
+        };
+    }
+}
