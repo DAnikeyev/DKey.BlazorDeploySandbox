@@ -6,7 +6,7 @@ public class ChessClockLobby
     {
         LobbyId = lobbyId;
         LobbyName = lobbyName;
-        Clock = new ChessClock(TimeSpan.FromSeconds(7), TimeSpan.FromSeconds(1));
+        Clock = new ChessClock(TimeSpan.FromSeconds(90), TimeSpan.FromSeconds(3));
     }
 
     public ChessClock Clock { get; set; }

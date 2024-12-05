@@ -1,5 +1,6 @@
 ﻿namespace ChessClockModel;
 
+[Serializable]
 public class ChessClock
 {
     public TimeSpan InitialTime1 { get; set; }
@@ -15,6 +16,10 @@ public class ChessClock
     public DateTime LastUpdated { get; set; }
     public bool IsPlayer1Turn { get; set; }
     public bool IsPlayer2Turn => !IsPlayer1Turn;
+
+    public ChessClock()
+    {
+    }
 
     public ChessClock(TimeSpan time, TimeSpan delay)
     {

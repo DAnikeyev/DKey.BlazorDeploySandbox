@@ -1,70 +1,89 @@
 using Microsoft.AspNetCore.Components;
 using ChessClockModel;
 using System.Timers;
+using Microsoft.AspNetCore.SignalR.Client;
 using Timer = System.Timers.Timer;
 
 namespace SandboxWebApp.Client.Pages;
 
 public partial class ChessLobbyPage : ComponentBase
 {
-    public ChessClockLobby? ChessClockLobby { get; set; }
+    public static ChessClockLobby? ChessClockLobby { get; set; }
+
+    private HubConnection? hubConnection;
 
     private Timer? _timer;
-    public string displayedTime1 { get; set; } = "00:00:00";
-    public string displayedTime2 { get; set; } = "00:00:00";
+    public string displayedTime1 { get; set; } = "00:00.00";
+    public string displayedTime2 { get; set; } = "00:00.00";
 
-    public string Player1DisplayName => ChessClockLobby?.Player1 ?? "Unknown1";
-    public string Player2DisplayName => ChessClockLobby?.Player2 ?? "Unknown2";
+    public string Player1DisplayName => ChessClockLobby?.Player1 ?? "";
+    public string Player2DisplayName => ChessClockLobby?.Player2 ?? "";
     public string WinnerDisplay => ChessClockLobby?.Clock.IsPlayer1Winner switch
     {
-        true => $"{Player1DisplayName} Wins!",
-        false => $"{Player2DisplayName} Wins!",
+        true => $"Player 1 Wins!",
+        false => $"Player 2 Wins!",
         _ => ""
     };
 
-    public void HandlePlayer1Click()
+    protected override async Task OnInitializedAsync()
     {
-        if((ChessClockLobby?.Clock.IsRunning == true  && ChessClockLobby?.Clock.IsPlayer1Turn == true) || ChessClockLobby?.Clock.IsPaused == true)
+        ChessClockLobby = new ChessClockLobby("DefaultLobbyId");
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/chessLobbyHub"))
+            .Build();
+
+        hubConnection.On<ChessClock>("UpdateLobby", (updatedClock) =>
         {
-            ChessClockLobby?.Clock.SwitchTurn(false);
+            if (ChessClockLobby != null)
+                ChessClockLobby.Clock = updatedClock;
             Refresh();
-        }
-        if(ChessClockLobby?.Clock.IsRunning == false && ChessClockLobby?.Clock.IsPlayer1Winner == null)
+        });
+
+        try
         {
-            ChessClockLobby?.Clock.Start(false);
-            Refresh();
+            await hubConnection.StartAsync();
+            Console.WriteLine("SignalR connection established.");
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error establishing SignalR connection: {ex.Message}");
+        }
+
+        hubConnection.SendAsync("Reset");
+        _timer = new Timer(100);
+        _timer.Elapsed += OnTimerElapsed;
+        _timer.Start();
     }
 
-    public void HandlePlayer2Click()
+    public async Task HandlePlayer1Click()
     {
-        if((ChessClockLobby?.Clock.IsRunning == true && ChessClockLobby?.Clock.IsPlayer2Turn == true) || ChessClockLobby?.Clock.IsPaused == true)
-        {
-            ChessClockLobby?.Clock.SwitchTurn(true);
-            Refresh();
-        }
-        if(ChessClockLobby?.Clock.IsRunning == false && ChessClockLobby?.Clock.IsPlayer1Winner == null)
-        {
-            ChessClockLobby?.Clock.Start(true);
-            Refresh();
-        }
+        await hubConnection.SendAsync("HandlePlayer1Click");
     }
 
-    private void PauseClock()
+    public async Task HandlePlayer2Click()
     {
-        ChessClockLobby?.Clock.Pause();
+        await hubConnection.SendAsync("HandlePlayer2Click");
+    }
+
+    private async Task PauseClock()
+    {
+        await hubConnection.SendAsync("PauseClock");
+    }
+
+    private async Task ResetClock()
+    {
+        await hubConnection.SendAsync("ResetClock");
+    }
+
+    private async Task ApplySettings()
+    {
+        await hubConnection.SendAsync("SetNewClock", timeControlSeconds, delaySeconds);
         Refresh();
     }
 
-    private void ResetClock()
-    {
-        ChessClockLobby?.Clock.Reset();
-        Refresh();
-    }
 
     protected override void OnInitialized()
     {
-        ChessClockLobby = new ChessClockLobby("DefaultLobbyId");
         _timer = new Timer(100);
         _timer.Elapsed += OnTimerElapsed;
         _timer.Start();
@@ -99,6 +118,13 @@ public partial class ChessLobbyPage : ComponentBase
 
     }
 
+    public Task UpdateLobby(ChessClock clock)
+    {
+        if (ChessClockLobby != null) ChessClockLobby.Clock = clock;
+        Refresh();
+        return Task.CompletedTask;
+    }
+
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
     {
         Refresh();
@@ -106,6 +132,6 @@ public partial class ChessLobbyPage : ComponentBase
 
     private string FormatTime(TimeSpan time)
     {
-        return $"{time.Minutes:D2}:{time.Seconds:D2}:{time.Milliseconds / 10:D2}";
+        return $"{time.Minutes:D2}:{time.Seconds:D2}.{time.Milliseconds / 10:D2}";
     }
 }
